@@ -23,10 +23,10 @@ class Config:
         self.test_data = os.path.join(self.data_dir, "train_normalized.pkl")
 
         self.target_cols = [
+            "target_demean_normalized",
+            "target_normalized",
             "avg_target_demean_normalized",
             "avg_target_normalized",
-            # "target_normalized",
-            # "target_demean_normalized",
         ]
         self.target_cols_orig = [
             "target",
@@ -36,9 +36,9 @@ class Config:
         self.split = "GroupKFold"
         self.fold = fold
         self.seed = seed
-        self.num_workers = 8
+        self.num_workers = 4
         self.batch_size = batch_size
-        self.val_batch_size = 20480
+        self.val_batch_size = 2048
 
         # setting
         self.reuse_model = False

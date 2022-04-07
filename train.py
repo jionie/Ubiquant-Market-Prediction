@@ -33,7 +33,7 @@ from train_config import Config as TrainConfig
 
 parser = argparse.ArgumentParser(description="arg parser")
 parser.add_argument("--model_type", type=str, default="ffnn", required=False, help="specify the model type")
-parser.add_argument("--grid_search", type=bool, default=True, required=False, help="specify the grid search mode")
+parser.add_argument("--grid_search", type=bool, default=False, required=False, help="specify the grid search mode")
 parser.add_argument("--seed", type=int, default=2022, required=False, help="specify the seed")
 parser.add_argument("--batch_size", type=int, default=20480, required=False, help="specify the batch size")
 parser.add_argument("--accumulation_steps", type=int, default=1, required=False, help="specify the accumulation_steps")
@@ -930,10 +930,11 @@ if __name__ == "__main__":
 
     if not args.grid_search:
 
-        for fold in range(1):
+        for fold in range(4):
             # train with random reformat first
             train_config = TrainConfig(
                 model_type=args.model_type,
+                fold=fold,
                 seed=args.seed,
                 batch_size=args.batch_size,
                 accumulation_steps=args.accumulation_steps
@@ -954,17 +955,20 @@ if __name__ == "__main__":
 
             for hidden_size in [
                 64,
-                # 96,
+                96,
                 # 128,
             ]:
                 for (dropout, l1_weight) in [
-                    (0.15, 1e-4),
-                    (0.15, 2e-4),
-                    (0.15, 5e-4),
-                    (0.15, 1e-3),
-                    (0.2, 5e-5),
-                    (0.2, 1e-4),
-                    (0.2, 2e-4),
+                    (0.1, 2e-4),
+                    (0.15, 1.5e-4),
+                    (0.15, 3e-4),
+                    # (0.15, 1e-4),
+                    # (0.15, 2e-4),
+                    # (0.15, 5e-4),
+                    # (0.15, 1e-3),
+                    # (0.2, 5e-5),
+                    # (0.2, 1e-4),
+                    # (0.2, 2e-4),
                 ]:
                     for weight_decay in [
                         # 1.5e-2,
@@ -980,6 +984,7 @@ if __name__ == "__main__":
                         train_config = TrainConfig(
                             model_type=args.model_type,
                             seed=args.seed,
+                            fold=fold,
                             batch_size=args.batch_size,
                             accumulation_steps=args.accumulation_steps,
                             hidden_size=hidden_size,
