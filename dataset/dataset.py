@@ -94,12 +94,20 @@ def get_train_val_loader(config):
             batch_size=config.batch_size,
             num_workers=config.num_workers,
             shuffle=True,
-            drop_last=False,
+            drop_last=True,
             pin_memory=True,
             collate_fn=collate,
         )
 
-        val_loader = None
+        val_loader = DataLoader(
+            train_dataset,
+            batch_size=config.batch_size,
+            num_workers=config.num_workers,
+            shuffle=False,
+            drop_last=False,
+            pin_memory=True,
+            collate_fn=collate,
+        )
 
     elif config.split == "GroupKFold":
         train_df = pd.read_pickle(os.path.join(config.data_dir,
@@ -123,7 +131,7 @@ def get_train_val_loader(config):
             batch_size=config.batch_size,
             num_workers=config.num_workers,
             shuffle=True,
-            drop_last=False,
+            drop_last=True,
             pin_memory=True,
             collate_fn=collate,
         )
@@ -147,7 +155,7 @@ def get_train_val_loader(config):
             val_dataset,
             batch_size=config.val_batch_size,
             num_workers=config.num_workers,
-            shuffle=True,
+            shuffle=False,
             drop_last=False,
             pin_memory=True,
             collate_fn=collate,
