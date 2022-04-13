@@ -112,6 +112,8 @@ def get_train_val_loader(config):
     elif config.split == "GroupKFold":
         train_df = pd.read_pickle(os.path.join(config.data_dir,
                                                "train_normalized_GroupKFold_{}_train.pkl".format(config.fold)))
+        # train_df = pd.read_pickle(os.path.join(config.data_dir,
+        #                                        "train_demodel_GroupKFold_{}_train.pkl".format(config.fold)))
 
         feature_cols = ["f_{}".format(feature_idx) for feature_idx in range(300)]
         train_features = train_df[feature_cols].values
@@ -138,6 +140,8 @@ def get_train_val_loader(config):
 
         val_df = pd.read_pickle(os.path.join(config.data_dir,
                                              "train_normalized_GroupKFold_{}_val.pkl".format(config.fold)))
+        # val_df = pd.read_pickle(os.path.join(config.data_dir,
+        #                                      "train_demodel_GroupKFold_{}_val.pkl".format(config.fold)))
 
         val_features = val_df[feature_cols].values
         val_targets = val_df[config.target_cols].values

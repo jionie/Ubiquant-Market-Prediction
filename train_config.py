@@ -4,7 +4,7 @@ import os
 class Config:
     # config settings
     def __init__(self,
-                 model_type="ffnn",
+                 model_type="cnn",
                  seed=2020,
                  fold=0,
                  batch_size=64,
@@ -19,24 +19,27 @@ class Config:
         # data configs
         self.data_dir = "../inputs/ubiquant-market-prediction"
 
-        self.train_data_full = os.path.join(self.data_dir, "train_normalized.pkl")
-        self.test_data = os.path.join(self.data_dir, "train_normalized.pkl")
+        self.train_data_full = os.path.join(self.data_dir, "train_demodel_cnn.pkl")
+        self.test_data = os.path.join(self.data_dir, "train_demodel_cnn.pkl")
 
         self.target_cols = [
-            "target_demean_normalized",
-            "target_normalized",
-            "avg_target_demean_normalized",
-            "avg_target_normalized",
+            # "target_demean_normalized",
+            # "target_normalized",
+            # "avg_target_demean_normalized",
+            # "avg_target_normalized",
+            # "target_demodel",
+            "target_demodel_cnn",
+            # "target"
         ]
         self.target_cols_orig = [
             "target",
         ]
 
         # cross validation configs
-        self.split = "GroupKFold"
+        self.split = "full"
         self.fold = fold
         self.seed = seed
-        self.num_workers = 4
+        self.num_workers = 2
         self.batch_size = batch_size
         self.val_batch_size = 2048
 
@@ -79,7 +82,7 @@ class Config:
         self.warmup_steps = 40
 
         # lr
-        self.lr = 8e-3
+        self.lr = 4e-3
         self.warmup_lr = 2e-5
         self.min_lr = 2e-5
         self.weight_decay = weight_decay
@@ -91,7 +94,7 @@ class Config:
         # gradient accumulation
         self.accumulation_steps = accumulation_steps
         # epochs
-        self.num_epoch = 40
+        self.num_epoch = 15
         self.num_adjust_bn_epoch = 1
         # saving rate
         self.saving_rate = 1

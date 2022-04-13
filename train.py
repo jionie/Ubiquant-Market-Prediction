@@ -27,12 +27,13 @@ from utils.file import Logger
 
 # import model
 from models.ffnn import FFNNModel
+from models.cnn import CNNModel
 
 # import config
 from train_config import Config as TrainConfig
 
 parser = argparse.ArgumentParser(description="arg parser")
-parser.add_argument("--model_type", type=str, default="ffnn", required=False, help="specify the model type")
+parser.add_argument("--model_type", type=str, default="cnn", required=False, help="specify the model type")
 parser.add_argument("--grid_search", type=bool, default=False, required=False, help="specify the grid search mode")
 parser.add_argument("--seed", type=int, default=2022, required=False, help="specify the seed")
 parser.add_argument("--batch_size", type=int, default=20480, required=False, help="specify the batch size")
@@ -118,6 +119,8 @@ class UMP:
         # for switching model
         if self.config.model_type == "ffnn":
             self.model = FFNNModel(self.config).to(self.config.device)
+        elif self.config.model_type == "cnn":
+            self.model = CNNModel(self.config).to(self.config.device)
         else:
             raise NotImplementedError
 
@@ -673,9 +676,6 @@ class UMP:
         self.eval_count += 1
 
         # eval set metrics
-        all_eval_pearson = []
-        bias = []
-
         valid_loss = np.zeros(1, np.float32)
         valid_num = np.zeros_like(valid_loss)
 
@@ -789,7 +789,7 @@ class UMP:
         if self.config.lr_scheduler_name == "ReduceLROnPlateau":
             self.scheduler.step(eval_pearson)
 
-        if abs(pred_bias) < 0.1 or self.epoch >= self.config.num_epoch:
+        if abs(pred_bias) < 0.2 or self.epoch >= self.config.num_epoch:
             self.save_check_point()
             self.count = 0
 
@@ -930,7 +930,7 @@ if __name__ == "__main__":
 
     if not args.grid_search:
 
-        for fold in range(4):
+        for fold in range(1):
             # train with random reformat first
             train_config = TrainConfig(
                 model_type=args.model_type,
@@ -955,14 +955,15 @@ if __name__ == "__main__":
 
             for hidden_size in [
                 64,
-                96,
+                # 96,
                 # 128,
             ]:
                 for (dropout, l1_weight) in [
                     (0.1, 2e-4),
-                    (0.15, 1.5e-4),
-                    (0.15, 3e-4),
-                    # (0.15, 1e-4),
+                    # (0.15, 1.5e-4),
+                    # (0.15, 3e-4),
+                    # (0.15, 4e-4),
+                    # (0.15, 1e-3),
                     # (0.15, 2e-4),
                     # (0.15, 5e-4),
                     # (0.15, 1e-3),
