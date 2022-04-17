@@ -409,12 +409,14 @@ class UMP:
 
     def train_batch(
             self,
+            investment_embed,
             feature,
             target,
             target_orig,
             weight
     ):
         # set input to cuda mode
+        investment_embed = investment_embed.to(self.config.device).int()
         feature = feature.to(self.config.device).float()
 
         if target is not None:
@@ -425,7 +427,7 @@ class UMP:
 
         with torch.autograd.set_detect_anomaly(True):
 
-            outputs, class_outputs = self.model(feature)
+            outputs, class_outputs = self.model(investment_embed, feature)
 
         outputs_direction = torch.where(outputs >= 0, 1, -1)
         target_direction = torch.where(target >= 0, 1, -1)
@@ -525,7 +527,7 @@ class UMP:
             # init optimizer
             self.model.zero_grad()
 
-            for tr_batch_i, (feature, target, target_orig,) in enumerate(self.train_data_loader):
+            for tr_batch_i, (investment_embed, feature, target, target_orig,) in enumerate(self.train_data_loader):
 
                 batch_size = feature.shape[0]
 
@@ -537,6 +539,7 @@ class UMP:
                     rate += param_group["lr"] / len(self.optimizer.param_groups)
 
                 loss, outputs, target, target_orig, wrong_direction, all_direction = self.train_batch(
+                    investment_embed,
                     feature,
                     target,
                     target_orig,
@@ -654,22 +657,22 @@ class UMP:
 
             self.epoch += 1
 
-        for _ in range(self.config.num_adjust_bn_epoch):
-
-            self.test_op(online=False, adjust_bn=True)
-
-            self.log.write("Updating BN for one test step finished cost time {}s\n\n".format(time.time() -
-                                                                                             self.start))
-            self.start = time.time()
-
-            self.evaluate_op()
-
-            self.log.write("Evaluating for one eval step finished cost time {}s\n\n".format(time.time() -
-                                                                                            self.start))
-            self.start = time.time()
-
-            self.epoch += 1
-            self.step += 1
+        # for _ in range(self.config.num_adjust_bn_epoch):
+        #
+        #     self.test_op(online=False, adjust_bn=True)
+        #
+        #     self.log.write("Updating BN for one test step finished cost time {}s\n\n".format(time.time() -
+        #                                                                                      self.start))
+        #     self.start = time.time()
+        #
+        #     self.evaluate_op()
+        #
+        #     self.log.write("Evaluating for one eval step finished cost time {}s\n\n".format(time.time() -
+        #                                                                                     self.start))
+        #     self.start = time.time()
+        #
+        #     self.epoch += 1
+        #     self.step += 1
 
     def evaluate_op(self):
 
@@ -686,7 +689,7 @@ class UMP:
         self.reg_criterion = MSELoss(reduction="none")
 
         with torch.no_grad():
-            for val_batch_i, (feature, target, target_orig) in enumerate(self.val_data_loader):
+            for val_batch_i, (investment_embed, feature, target, target_orig) in enumerate(self.val_data_loader):
 
                 # set model to eval mode
                 self.model.eval()
@@ -694,11 +697,12 @@ class UMP:
                 batch_size = feature.shape[0]
 
                 # set input to cuda mode
+                investment_embed = investment_embed.to(self.config.device).int()
                 feature = feature.to(self.config.device).float()
                 target = target.to(self.config.device).float()
                 target_orig = target_orig.to(self.config.device).float()
 
-                outputs, class_outputs = self.model(feature)
+                outputs, class_outputs = self.model(investment_embed, feature)
 
                 loss = self.reg_criterion(outputs, target)
 
@@ -814,7 +818,7 @@ class UMP:
             # init cache
             torch.cuda.empty_cache()
 
-            for test_batch_i, (feature, target, target_orig) in enumerate(self.test_data_loader):
+            for test_batch_i, (investment_embed, feature, target, target_orig) in enumerate(self.test_data_loader):
 
                 # set model to eval mode
                 self.model.eval()
@@ -827,6 +831,7 @@ class UMP:
                             m.train()
 
                 # set input to cuda mode
+                investment_embed = investment_embed.to(self.config.device).int()
                 feature = feature.to(self.config.device).float()
 
                 if target is not None:
@@ -835,7 +840,7 @@ class UMP:
                 if target_orig is not None:
                     target_orig = target_orig.to(self.config.device).float()
 
-                outputs, class_outputs = self.model(feature)
+                outputs, class_outputs = self.model(investment_embed, feature)
 
                 def to_numpy(tensor):
                     return tensor.detach().cpu().numpy()

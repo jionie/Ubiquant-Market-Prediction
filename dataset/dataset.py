@@ -10,20 +10,33 @@ class UMPDataset:
     def __init__(self,
                  config,
                  sample_indices,
+                 investment_embed,
                  features,
                  targets,
                  target_orig,
+                 mode="train",
                  ):
 
         self.config = config
         self.sample_indices = sample_indices
         self.num_targets = len(self.config.target_cols)
 
+        self.investment_embed = investment_embed
         self.features = features
         self.targets = targets
         self.target_orig = target_orig
+        self.mode = mode
 
     def __getitem__(self, idx):
+
+        # get investment embed
+        if self.mode == "train":
+            if np.random.random(1) < self.config.investment_embed_rate:
+                investment_embed = np.ones_like(self.investment_embed[idx], dtype=np.int16) * 3578
+            else:
+                investment_embed = self.investment_embed[idx]
+        else:
+            investment_embed = self.investment_embed[idx]
 
         # get feature
         feature = np.nan_to_num(self.features[idx], nan=0, posinf=0, neginf=0)
@@ -39,21 +52,25 @@ class UMPDataset:
         else:
             target_orig = None
 
-        return feature, target, target_orig
+        return investment_embed, feature, target, target_orig
 
     def __len__(self):
         return len(self.sample_indices)
 
 
 def collate(batch):
+    investment_embeds = []
     features = []
     targets = []
     targets_orig = []
 
-    for (feature, target, target_orig) in batch:
+    for (investment_embed, feature, target, target_orig) in batch:
+        investment_embeds.append(investment_embed)
         features.append(feature)
         targets.append(target)
         targets_orig.append(target_orig)
+
+    investment_embeds = torch.from_numpy(np.stack(investment_embeds)).contiguous().int()
 
     features = torch.from_numpy(np.stack(features)).contiguous().float()
 
@@ -67,7 +84,7 @@ def collate(batch):
     else:
         targets_orig = torch.from_numpy(np.stack(targets_orig)).contiguous().float()
 
-    return features, targets, targets_orig
+    return investment_embeds, features, targets, targets_orig
 
 
 def get_train_val_loader(config):
@@ -77,6 +94,7 @@ def get_train_val_loader(config):
         train_df = pd.read_pickle(config.train_data_full)
 
         feature_cols = ["f_{}".format(feature_idx) for feature_idx in range(300)]
+        train_investment_embed = train_df[config.investment_embed_col].values
         train_features = train_df[feature_cols].values
         train_targets = train_df[config.target_cols].values
         train_target_orig = train_df[config.target_cols_orig].values
@@ -87,6 +105,8 @@ def get_train_val_loader(config):
             features=train_features,
             targets=train_targets,
             target_orig=train_target_orig,
+            investment_embed=train_investment_embed,
+            mode="train"
         )
 
         train_loader = DataLoader(
@@ -99,8 +119,18 @@ def get_train_val_loader(config):
             collate_fn=collate,
         )
 
+        val_dataset = UMPDataset(
+            config=config,
+            sample_indices=range(train_targets.shape[0]),
+            features=train_features,
+            targets=train_targets,
+            target_orig=train_target_orig,
+            investment_embed=train_investment_embed,
+            mode="val"
+        )
+
         val_loader = DataLoader(
-            train_dataset,
+            val_dataset,
             batch_size=config.batch_size,
             num_workers=config.num_workers,
             shuffle=False,
@@ -110,12 +140,15 @@ def get_train_val_loader(config):
         )
 
     elif config.split == "GroupKFold":
+        # train_df = pd.read_pickle(os.path.join(config.data_dir,
+        #                                        "train_new_GroupKFold_{}_train.pkl".format(config.fold)))
         train_df = pd.read_pickle(os.path.join(config.data_dir,
                                                "train_normalized_GroupKFold_{}_train.pkl".format(config.fold)))
         # train_df = pd.read_pickle(os.path.join(config.data_dir,
         #                                        "train_demodel_GroupKFold_{}_train.pkl".format(config.fold)))
 
         feature_cols = ["f_{}".format(feature_idx) for feature_idx in range(300)]
+        train_investment_embed = train_df[config.investment_embed_col].values
         train_features = train_df[feature_cols].values
         train_targets = train_df[config.target_cols].values
         train_target_orig = train_df[config.target_cols_orig].values
@@ -126,6 +159,8 @@ def get_train_val_loader(config):
             features=train_features,
             targets=train_targets,
             target_orig=train_target_orig,
+            investment_embed=train_investment_embed,
+            mode="train"
         )
 
         train_loader = DataLoader(
@@ -138,12 +173,15 @@ def get_train_val_loader(config):
             collate_fn=collate,
         )
 
+        # val_df = pd.read_pickle(os.path.join(config.data_dir,
+        #                                      "train_new_GroupKFold_{}_val.pkl".format(config.fold)))
         val_df = pd.read_pickle(os.path.join(config.data_dir,
                                              "train_normalized_GroupKFold_{}_val.pkl".format(config.fold)))
         # val_df = pd.read_pickle(os.path.join(config.data_dir,
         #                                      "train_demodel_GroupKFold_{}_val.pkl".format(config.fold)))
 
         val_features = val_df[feature_cols].values
+        val_investment_embed = val_df[config.investment_embed_col].values
         val_targets = val_df[config.target_cols].values
         val_target_orig = val_df[config.target_cols_orig].values
 
@@ -153,6 +191,8 @@ def get_train_val_loader(config):
             features=val_features,
             targets=val_targets,
             target_orig=val_target_orig,
+            investment_embed=val_investment_embed,
+            mode="val"
         )
 
         val_loader = DataLoader(
@@ -176,6 +216,7 @@ def get_test_loader(config, online=False):
     test_df = load(config.test_data)
 
     feature_cols = ["f_{}".format(feature_idx) for feature_idx in range(300)]
+    test_investment_embed = test_df[config.investment_embed_col].values
     test_features = test_df[feature_cols].values
 
     if not online:
@@ -191,6 +232,8 @@ def get_test_loader(config, online=False):
         features=test_features,
         targets=test_targets,
         target_orig=test_target_orig,
+        investment_embed=test_investment_embed,
+        mode="test"
     )
 
     test_loader = DataLoader(

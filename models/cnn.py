@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -6,8 +7,17 @@ class CNNModel(nn.Module):
 
         super(CNNModel, self).__init__()
 
+        self.investment_embedding = nn.Embedding(3579, 8, padding_idx=0)
+
+        self.embedding_proj = nn.Sequential(
+            nn.Linear(8, 8),
+            nn.LayerNorm(8),
+            nn.SiLU(),
+            nn.Dropout(0.15),
+        )
+
         self.stem_cnn = nn.Sequential(
-            nn.Linear(300, 256),
+            nn.Linear(300 + 8, 256),
             nn.BatchNorm1d(256, momentum=0.1, affine=False),
             nn.SiLU(),
         )
@@ -72,9 +82,13 @@ class CNNModel(nn.Module):
                 if len(p.shape) > 1:
                     nn.init.xavier_uniform_(p.data)
 
-    def forward(self, x):
+    def forward(self, investment_embed, feature):
+
+        embed = self.investment_embedding(investment_embed)
+        embed = self.embedding_proj(embed).squeeze(dim=1)
+        feature = torch.cat([feature, embed], dim=1)
         
-        cnn_out = self.stem_cnn(x)
+        cnn_out = self.stem_cnn(feature)
         cnn_out = cnn_out.reshape(cnn_out.shape[0], 1, cnn_out.shape[1])
         
         cnn_out = self.conv(cnn_out)

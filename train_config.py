@@ -22,6 +22,9 @@ class Config:
         self.train_data_full = os.path.join(self.data_dir, "train_demodel_cnn.pkl")
         self.test_data = os.path.join(self.data_dir, "train_demodel_cnn.pkl")
 
+        self.investment_embed_col = [
+            "investment_embed"
+        ]
         self.target_cols = [
             # "target_demean_normalized",
             # "target_normalized",
@@ -37,11 +40,13 @@ class Config:
 
         # cross validation configs
         self.split = "full"
+        # self.split = "GroupKFold"
         self.fold = fold
         self.seed = seed
         self.num_workers = 2
         self.batch_size = batch_size
         self.val_batch_size = 2048
+        self.investment_embed_rate = 0.5
 
         # setting
         self.reuse_model = False
@@ -56,7 +61,9 @@ class Config:
         # model common config
         self.model_type = model_type
         self.model_name = "UMPModel"
+        self.investment_embed_size = 3579
         self.feature_size = 300
+        self.embed_size = 8
         self.hidden_size = hidden_size
         self.dropout = dropout
 
